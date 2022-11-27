@@ -43,7 +43,7 @@ class Channel():
 				created = True
 
 		self.channel.sadd('members',str(newpid))
-		self.channel.sadd(subgroup, str(newpid))
+		self.channel.rpush(subgroup, str(newpid))
 		return str(newpid)
 
 	def leave(self, subgroup):
@@ -70,7 +70,7 @@ class Channel():
 		#print (self.osmembers)
 
 	def subgroup(self, subgroup):
-		return list(self.channel.smembers(subgroup))
+		return list(self.channel.lrange(subgroup,0,100 ))
 
 	def sendTo(self, destinationSet, message):
 		'''Give destination pid as bytes or integer and message as string'''
@@ -89,6 +89,7 @@ class Channel():
 
 			assert self.channel.sismember('members', str(i)), f'Destination set member {i}does not exist'
 			self.channel.rpush(str([str(caller),str(i)]), str(message) )
+			self.channel.rpush("log", str(message) )
 
 
 	def recvFromAny(self, timeout=0):
@@ -100,7 +101,6 @@ class Channel():
 
 		if msg:
 			return [ (msg[0]).decode("ascii"), (msg[1].decode("ascii"))]
-
 
 
 

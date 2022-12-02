@@ -8,7 +8,7 @@ class Channel():
 
 	def __init__(self, nBits=5, hostIP='localhost', portNo=6379):
 		self.channel   = redis.StrictRedis(host=hostIP, port=portNo, db=0)
-		self.osmembers = {}
+		self.caller
 		self.nBits     = nBits
 		self.MAXPROC   = pow(2, nBits)
 
@@ -46,6 +46,7 @@ class Channel():
 		self.channel.rpush(subgroup, str(newpid))
 		return str(newpid)
 
+	#not fixed do not use. or fix then use
 	def leave(self, subgroup):
 		ospid = os.getpid()
 		pid		= self.osmembers[ospid]

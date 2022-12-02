@@ -9,7 +9,13 @@ class RingNode:
 
     def __init__(self):
         self.ci=channel.Channel( )
-        self.nodeID=self.ci.join("ring1")
+        successfulInit = False
+        while not successfulInit:
+            try:
+                self.nodeID=self.ci.join("ring1")
+                successfulInit = True
+            except(AssertionError):
+                print("Could not get ID retrying")
 
     def run(self):
         try:
@@ -17,7 +23,7 @@ class RingNode:
 
             (head,next,prev) = self.getTopology()
             print("CLIENT " + self.nodeID + " sending message: "+ ("Hello from " +str(self.nodeID)) + "\n")
-            self.ci.sendTo(str(next),("Hello from " +str(self.nodeID)) )
+            self.ci.sendTo([str(next)],("Hello from " +str(self.nodeID)) )
 
             while True:
                 message = self.ci.recvFromAny()
@@ -26,6 +32,27 @@ class RingNode:
                 print("NODE: " + str(message[0]) + " Received message: " + str(message[1]) +"\n" )
         except AssertionError as msg:
             print("ASSERT", self.nodeID, " msg:" , msg)
+
+    def writeToFile(self,fileName: str = "",delta: str = 100):
+        #open file
+        f = open("./datafile.txt" )
+        #read file
+        firstLine = f.readline().strip("\n")
+        print(firstLine)
+        secondLine = f.readline()
+        print(secondLine)
+        f.close()
+        
+        #write
+        f = open("./datafile.txt" ,"wt")
+        writeFirstLine = str(int(firstLine) + int(delta))+ "\n"
+        writeSecondLine = str(int(secondLine) + 1)
+        f.write(writeFirstLine)
+        f.write(writeSecondLine)  
+        print(writeFirstLine)
+        print(writeSecondLine)
+        #close file
+        f.close()
 
 
     def getTopology(self):
@@ -38,7 +65,7 @@ class RingNode:
 
         thisNodeIndex = topologyByteList.index(self.nodeID)
 
-        print(topologyByteList)
+        #print(topologyByteList)
         head = topologyByteList[0]
 
         #Find next node. If this is the last node. Go to circle's head
@@ -53,6 +80,6 @@ class RingNode:
         else:
             previousNodePID =  topologyByteList[thisNodeIndex -1] 
 
-        print("CLIENT " + self.nodeID, nextNodePID, previousNodePID, head)
+        #print("CLIENT " + self.nodeID, nextNodePID, previousNodePID, head)
         return(head,nextNodePID,previousNodePID)
 

@@ -41,7 +41,7 @@ class Channel():
 
 				self.channel.set("IDLock", "False")
 				created = True
-
+		assert not self.channel.sismember('members', str(newpid)), f'This id already exists'
 		self.channel.sadd('members',str(newpid))
 		self.channel.rpush(subgroup, str(newpid))
 		return str(newpid)
@@ -86,7 +86,6 @@ class Channel():
 				i = i.decode("ascii")
 			except (UnicodeDecodeError, AttributeError):
 				pass
-
 			assert self.channel.sismember('members', str(i)), f'Destination set member {i}does not exist'
 			self.channel.rpush(str([str(caller),str(i)]), str(message) )
 			self.channel.rpush("log", str(message) )

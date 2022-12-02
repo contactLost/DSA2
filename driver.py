@@ -5,7 +5,7 @@ import RingNode
 
 
 chan = channel.Channel()
-chan.channel.flushall()
+assert chan.channel.flushall()
 
 client = [RingNode.RingNode() for i in range(10)]
 

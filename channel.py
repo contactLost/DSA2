@@ -102,9 +102,11 @@ class Channel():
 
 
 	def changeTokenHolder(self, newHolderId):
+		self.channel.blpop(constants.TOKEN_KEY, 1)
 		self.channel.lpush(constants.TOKEN_KEY, str(newHolderId))
 
 
 	def checkTokenHolder(self):
-		holder = self.channel.lrange(constants.TOKEN_KEY, 0, 0)
+		holder = (self.channel.lrange(constants.TOKEN_KEY, 0, 0)[0]).decode("ascii")
+		print(holder)
 		return holder

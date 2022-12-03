@@ -24,17 +24,21 @@ class RingNode:
         
 
     def run(self):
+        self.ci.bind(self.nodeID)
         while True:
             #Listen to requests
-            message = self.ci.recvFromAny()
+
+            message = self.ci.recvFromAny(3)
 
             #When a token reveived
+            print(self.ci.checkTokenHolder())
             if self.ci.checkTokenHolder() == self.nodeID:
+                print("Token received at node " + self.nodeID)
                 self.asked = False
                 if self.hungry:
                     self.using = True
                     self.hungry = False
-                    #Async use file
+                    print("Work done at " + self.nodeID)
                 else:
                     self.ci.changeTokenHolder(self.nextNodeID)
                     self.pending_requests = False
@@ -50,14 +54,13 @@ class RingNode:
                     self.using = True
 
             #Release resource
-            self.using = True
+            self.using = False
             if self.pending_requests:
                 self.ci.changeTokenHolder(self.nextNodeID)
                 self.pending_requests = False
 
             #When a request received
             if message == constants.REQ_MSG:
-                #Delete all requests received
                 if self.ci.changeTokenHolder == self.nodeID and not self.using:
                     self.ci.changeTokenHolder(self.nextNodeID)
                 else:
@@ -67,23 +70,10 @@ class RingNode:
                         self.asked = True
     
             #Hungry counter
+            self.hungry = True
 
             #Check end condition
-
-            # try:
-            #     self.ci.bind(self.nodeID)
-
-            #     # print("CLIENT " + self.nodeID + " sending message: "+ ("Hello from " +str(self.nodeID)) + "\n")
-            #     # self.ci.sendTo([str(self.nextNodeID)],("Hello from " +str(self.nodeID)) )
-
-            #     while True:
-            #         message = self.ci.recvFromAny()
-            #         if message == None:
-            #             continue
-            #         print("NODE: " + str(message[0]) + " Received message: " + str(message[1]) +"\n" )
-            # except AssertionError as msg:
-            #     print("ASSERT", self.nodeID, " msg:" , msg)
-
+            
 
 
 

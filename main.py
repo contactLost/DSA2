@@ -13,16 +13,23 @@ TOTCOUNT = sys.argv[4]
 LOGFILE = sys.argv[5]
 MAXTIME = sys.argv[6]
 
+constants.NP = int(NP)
+constants.DATAFILE = DATAFILE
+constants.DELTA = int(DELTA)
+constants.TOTCOUNT = int(TOTCOUNT)
+constants.LOGFILE = LOGFILE
+constants.MAXTIME = int(MAXTIME)
+
 starttime = datetime.utcnow()
 
 chan = channel.Channel()
 chan.channel.flushall()
 
-nodes = [RingNode.RingNode(starttime) for i in range(int(constants.NP))]
-[nodes[i].getTopology() for i in range(int(constants.NP))]
+nodes = [RingNode.RingNode(starttime) for i in range(int(NP))]
+[nodes[i].getTopology() for i in range(int(NP))]
 chan.changeTokenHolder(nodes[0].nodeID)
 
-for i in range(int(constants.NP)):
+for i in range(int(NP)):
     pid = os.fork()
     if pid == 0:
         nodes[i].run()

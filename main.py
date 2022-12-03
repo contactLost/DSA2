@@ -22,11 +22,15 @@ constants.MAXTIME = int(MAXTIME)
 chan = channel.Channel()
 chan.channel.flushall()
 
-print(MAXTIME)
-
 nodes = [RingNode.RingNode() for i in range(int(NP))]
 [nodes[i].getTopology() for i in range(int(NP))]
+chan.changeTokenHolder(nodes[0].nodeID)
 
+for i in range(10):
+    pid = os.fork()
+    if pid == 0:
+        nodes[i].run()
+        os._exit(0)
 # #Open Server
 # pid = os.fork()
 # if pid == 0:

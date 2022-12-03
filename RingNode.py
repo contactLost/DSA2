@@ -1,4 +1,5 @@
 import channel
+import constants
 
 class RingNode:
 
@@ -13,7 +14,6 @@ class RingNode:
         self.pending_requests = False
         self.asked = False
         self.using = False
-        self.holder = False
 
         while not successfulInit:
             try:
@@ -21,22 +21,71 @@ class RingNode:
                 successfulInit = True
             except(AssertionError):
                 print("Could not get ID retrying")
+        
 
     def run(self):
-        try:
-            self.ci.bind(self.nodeID)
+        while True:
+            #Listen to requests
+            message = self.ci.recvFromAny()
 
-            (head,next,prev) = self.getTopology()
-            print("CLIENT " + self.nodeID + " sending message: "+ ("Hello from " +str(self.nodeID)) + "\n")
-            self.ci.sendTo([str(next)],("Hello from " +str(self.nodeID)) )
+            #When a token reveived
+            if self.ci.checkTokenHolder() == self.nodeID:
+                self.asked = False
+                if self.hungry:
+                    self.using = True
+                    self.hungry = False
+                    #Async use file
+                else:
+                    self.ci.changeTokenHolder(self.nextNodeID)
+                    self.pending_requests = False
 
-            while True:
-                message = self.ci.recvFromAny()
-                if message == None:
-                    continue
-                print("NODE: " + str(message[0]) + " Received message: " + str(message[1]) +"\n" )
-        except AssertionError as msg:
-            print("ASSERT", self.nodeID, " msg:" , msg)
+            #To use resource
+            if self.hungry:
+                if self.ci.checkTokenHolder() != self.nodeID:
+                    if not self.asked:
+                        self.ci.sendTo([str(self.previousNodeID)], constants.REQ_MSG)
+                        self.asked = True
+                    # wait until (using == TRUE) migth be unnecessary for us
+                else:
+                    self.using = True
+
+            #Release resource
+            self.using = True
+            if self.pending_requests:
+                self.ci.changeTokenHolder(self.nextNodeID)
+                self.pending_requests = False
+
+            #When a request received
+            if message == constants.REQ_MSG:
+                #Delete all requests received
+                if self.ci.changeTokenHolder == self.nodeID and not self.using:
+                    self.ci.changeTokenHolder(self.nextNodeID)
+                else:
+                    self.pending_requests = True
+                    if self.ci.changeTokenHolder == self.nodeID and not self.asked:
+                        self.ci.sendTo([str(self.previousNodeID)], constants.REQ_MSG)
+                        self.asked = True
+    
+            #Hungry counter
+
+            #Check end condition
+
+            # try:
+            #     self.ci.bind(self.nodeID)
+
+            #     # print("CLIENT " + self.nodeID + " sending message: "+ ("Hello from " +str(self.nodeID)) + "\n")
+            #     # self.ci.sendTo([str(self.nextNodeID)],("Hello from " +str(self.nodeID)) )
+
+            #     while True:
+            #         message = self.ci.recvFromAny()
+            #         if message == None:
+            #             continue
+            #         print("NODE: " + str(message[0]) + " Received message: " + str(message[1]) +"\n" )
+            # except AssertionError as msg:
+            #     print("ASSERT", self.nodeID, " msg:" , msg)
+
+
+
 
     def writeToFile(self,fileName: str = "",delta: str = 100):
         #open file
@@ -87,4 +136,3 @@ class RingNode:
 
         print("CLIENT " + self.nodeID, self.nextNodeID, self.previousNodeID, head)
         return(head,self.nextNodeID,self.previousNodeID)
-

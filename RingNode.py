@@ -40,23 +40,17 @@ class RingNode:
                         print("Request sent from node " + self.nodeID + " to " + self.previousNodeID)
                         self.ci.sendTo([str(self.previousNodeID)], constants.REQ_MSG)
                         self.asked = True
-                    
-                    # wait until (using == TRUE) migth be unnecessary for us
-                    # while not (self.ci.checkTokenHolder() == self.nodeID):
-                    #     print("waiting")
-                    
-                else:
-                    self.using = True
+
 
             #When a token recieved
-            print("Node " + self.nodeID + ": " + self.ci.checkTokenHolder())
+            print("Node " + self.nodeID + ": " + "Who has token: " + self.ci.checkTokenHolder())
             if self.ci.checkTokenHolder() == self.nodeID:
-                print("Node " + self.nodeID + ": " + "Token received at node " + self.nodeID)
+                print("Node " + self.nodeID + ": " + "Token received")
                 self.asked = False
                 if self.hungry:
                     self.using = True
                     self.hungry = False
-                    print("Node " + self.nodeID + ": " + "Work done at " + self.nodeID)
+                    print("Node " + self.nodeID + ": " + "Work done")
 
                     #Release resource
                     self.releaseResource()

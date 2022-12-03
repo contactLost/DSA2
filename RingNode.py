@@ -1,10 +1,12 @@
+import os
 import channel
 import constants
-
+from datetime import datetime
 class RingNode:
 
 
-    def __init__(self):
+    def __init__(self, starttime):
+        self.starttime: datetime = starttime
         self.ci=channel.Channel()
         successfulInit = False
         self.nodeID = ""
@@ -102,10 +104,12 @@ class RingNode:
         writeSecondLine = str(int(secondLine) + 1)
         f.write(writeFirstLine)
         f.write(writeSecondLine)  
-        print(writeFirstLine)
-        print(writeSecondLine)
+        #print(writeFirstLine)
+        #print(writeSecondLine)
         #close file
         f.close()
+        #Update log file
+        self.writeToLog( str(int(secondLine) + 1) )
 
 
     def getTopology(self):
@@ -135,3 +139,14 @@ class RingNode:
 
         print("CLIENT " + self.nodeID, self.nextNodeID, self.previousNodeID, head)
         return(head,self.nextNodeID,self.previousNodeID)
+
+    def writeToLog(self, updatedValue):
+        #t=0060000ms, pid=1, ospid=34765, new=50100, totalcount, count=17
+        t = datetime.utcnow()
+        pid = self.nodeID
+        ospid = os.getpid()
+        logText = "t= " + str((t - self.starttime).total_seconds() * 1000)[:6] + "ms, pid= "+ pid +", ospid= "+ str(ospid)  +", "+ str(constants.TOTCOUNT) +", count="+ updatedValue + "\n"
+        #print("trying to open log")
+        f = open("./logfile.txt","at")
+        f.write(logText)
+        f.close()

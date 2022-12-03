@@ -110,7 +110,7 @@ class RingNode:
         f.close()
         
         #write
-        f = open("./datafile.txt" ,"wt")
+        f = open(constants.DATAFILE ,"wt")
         writeFirstLine = str(int(firstLine) + int(constants.DELTA))+ "\n"
         writeSecondLine = str(int(secondLine) + 1)
         f.write(writeFirstLine)

@@ -25,6 +25,14 @@ starttime = datetime.utcnow()
 chan = channel.Channel()
 chan.channel.flushall()
 
+f = open(DATAFILE ,"wt")
+f.write("0\n0")
+f.close()
+
+f = open(LOGFILE ,"wt")
+f.write("")
+f.close()
+
 nodes = [RingNode.RingNode(starttime) for i in range(int(NP))]
 [nodes[i].getTopology() for i in range(int(NP))]
 chan.changeTokenHolder(nodes[0].nodeID)

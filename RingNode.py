@@ -23,14 +23,13 @@ class RingNode:
         self.using = False
         self.countHunger = True
         self.maxTime = random.randint(0, constants.MAXTIME)
-        print(self.maxTime)
 
         while not successfulInit:
             try:
                 self.nodeID=self.ci.join("ring1")
                 successfulInit = True
             except(AssertionError):
-                print("Could not get ID retrying")
+                None
         
     def releaseResource(self):
         #Release resource
@@ -53,24 +52,20 @@ class RingNode:
     def run(self):
         self.ci.bind(self.nodeID)
         while True:
-            print("Node " + self.nodeID + ": " + "did node ask " + str(self.asked))
             #To use resource
             if self.hungry:
                 if not (self.ci.checkTokenHolder() == self.nodeID):
                     if not self.asked:
-                        print("Request sent from node " + self.nodeID + " to " + self.previousNodeID)
                         self.ci.sendTo([str(self.previousNodeID)], constants.REQ_MSG)
                         self.asked = True
 
             #When a token recieved
-            print("Node " + self.nodeID + ": " + "Who has token: " + self.ci.checkTokenHolder())
             if self.ci.checkTokenHolder() == self.nodeID:
-                print("Node " + self.nodeID + ": " + "Token received")
                 self.asked = False
                 if self.hungry:
                     self.using = True
                     self.hungry = False
-                    print("Node " + self.nodeID + ": " + "Work done")
+                    self.writeToFile()
 
                     #Release resource
                     self.releaseResource()
@@ -84,7 +79,6 @@ class RingNode:
 
             #When a request received
             if self.pending_requests or message != None:
-                print("Node " + self.nodeID + ": " + "Request recieved")
                 if self.ci.checkTokenHolder() == self.nodeID and not self.hungry:
                     self.ci.changeTokenHolder(self.nextNodeID)
                 else:
@@ -105,25 +99,22 @@ class RingNode:
 
 
 
-    def writeToFile(self,fileName: str = "",delta: str = 100):
+    def writeToFile(self):
         #open file
-        f = open("./datafile.txt" )
+        f = open(constants.DATAFILE )
         #read file
         firstLine = f.readline().strip("\n")
-        print(firstLine)
+        print("Node " + self.nodeID + ": " + firstLine)
         secondLine = f.readline()
-        print(secondLine)
+        print("Node " + self.nodeID + ": " + secondLine)
         f.close()
         
         #write
         f = open("./datafile.txt" ,"wt")
-        writeFirstLine = str(int(firstLine) + int(delta))+ "\n"
+        writeFirstLine = str(int(firstLine) + int(constants.DELTA))+ "\n"
         writeSecondLine = str(int(secondLine) + 1)
         f.write(writeFirstLine)
-        f.write(writeSecondLine)  
-        #print(writeFirstLine)
-        #print(writeSecondLine)
-        #close file
+        f.write(writeSecondLine)
         f.close()
         #Update log file
         self.writeToLog( str(int(secondLine) + 1) )
@@ -138,8 +129,6 @@ class RingNode:
             topologyByteList[i] = topologyByteList[i].decode("ascii")
 
         thisNodeIndex = topologyByteList.index(self.nodeID)
-
-        #print(topologyByteList)
         head = topologyByteList[0]
 
         #Find next node. If this is the last node. Go to circle's head

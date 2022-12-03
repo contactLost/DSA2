@@ -1,5 +1,10 @@
 import channel
 import constants
+import asyncio
+import random
+import time
+import threading
+
 
 class RingNode:
 
@@ -14,6 +19,8 @@ class RingNode:
         self.pending_requests = False
         self.asked = False
         self.using = False
+        self.countHunger = True
+        self.maxTime = random.randint(0, constants.MAXTIME)
 
         while not successfulInit:
             try:
@@ -30,6 +37,17 @@ class RingNode:
                 self.ci.changeTokenHolder(self.nextNodeID)
                 self.pending_requests = False
 
+    def countHungry(self):
+        self.countHunger = False
+        startingTime = round(time.time()*1000)
+        timer = startingTime
+
+        while timer - startingTime < self.maxTime:
+            print(timer - startingTime)
+            timer = timer + 1
+        self.hungry = True
+        self.countHunger = True
+
     def run(self):
         self.ci.bind(self.nodeID)
         while True:
@@ -41,7 +59,6 @@ class RingNode:
                         print("Request sent from node " + self.nodeID + " to " + self.previousNodeID)
                         self.ci.sendTo([str(self.previousNodeID)], constants.REQ_MSG)
                         self.asked = True
-
 
             #When a token recieved
             print("Node " + self.nodeID + ": " + "Who has token: " + self.ci.checkTokenHolder())
@@ -62,8 +79,6 @@ class RingNode:
 
             #Listen to requests
             message = self.ci.recvFromAny(3)
-            print("Node " + self.nodeID + ": ")
-            print(message)
 
             #When a request received
             if self.pending_requests or message != None:
@@ -78,7 +93,9 @@ class RingNode:
                         self.asked = True
     
             #Hungry counter
-            self.hungry = True
+            if self.countHunger:
+                x = threading.Thread(target=self.countHungry)
+                x.start()
 
             #Check end condition
             message = None

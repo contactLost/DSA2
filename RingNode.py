@@ -33,6 +33,7 @@ class RingNode:
     def run(self):
         self.ci.bind(self.nodeID)
         while True:
+            print("Node " + self.nodeID + ": " + "did node ask " + str(self.asked))
             #To use resource
             if self.hungry:
                 if not (self.ci.checkTokenHolder() == self.nodeID):

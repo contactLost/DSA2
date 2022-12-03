@@ -108,5 +108,4 @@ class Channel():
 
 	def checkTokenHolder(self):
 		holder = (self.channel.lrange(constants.TOKEN_KEY, 0, 0)[0]).decode("ascii")
-		print(holder)
 		return holder

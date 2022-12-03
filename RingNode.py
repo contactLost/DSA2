@@ -22,50 +22,58 @@ class RingNode:
             except(AssertionError):
                 print("Could not get ID retrying")
         
+    def releaseResource(self):
+        #Release resource
+        if self.ci.checkTokenHolder() == self.nodeID:
+            self.using = False
+            if self.pending_requests:
+                self.ci.changeTokenHolder(self.nextNodeID)
+                self.pending_requests = False
 
     def run(self):
         self.ci.bind(self.nodeID)
         while True:
-            #Listen to requests
-
-            message = self.ci.recvFromAny(3)
-
-            #When a token reveived
-            print(self.ci.checkTokenHolder())
-            if self.ci.checkTokenHolder() == self.nodeID:
-                print("Token received at node " + self.nodeID)
-                self.asked = False
-                if self.hungry:
-                    self.using = True
-                    self.hungry = False
-                    print("Work done at " + self.nodeID)
-                else:
-                    self.ci.changeTokenHolder(self.nextNodeID)
-                    self.pending_requests = False
-
             #To use resource
             if self.hungry:
                 if self.ci.checkTokenHolder() != self.nodeID:
                     if not self.asked:
                         self.ci.sendTo([str(self.previousNodeID)], constants.REQ_MSG)
                         self.asked = True
+                    
                     # wait until (using == TRUE) migth be unnecessary for us
+                    # while not (self.ci.checkTokenHolder() == self.nodeID):
+                    #     print("waiting")
+
+                    #When a token recieved
+                    print(self.ci.checkTokenHolder())
+                    if self.ci.checkTokenHolder() == self.nodeID:
+                        print("Token received at node " + self.nodeID)
+                        self.asked = False
+                        if self.hungry:
+                            self.using = True
+                            self.hungry = False
+                            print("Work done at " + self.nodeID)
+
+                            #Release resource
+                            self.releaseResource()
+
+                        else:
+                            self.ci.changeTokenHolder(self.nextNodeID)
+                            self.pending_requests = False
+                    
                 else:
                     self.using = True
 
-            #Release resource
-            self.using = False
-            if self.pending_requests:
-                self.ci.changeTokenHolder(self.nextNodeID)
-                self.pending_requests = False
+            #Listen to requests
+            message = self.ci.recvFromAny(3)
 
             #When a request received
             if message == constants.REQ_MSG:
-                if self.ci.changeTokenHolder == self.nodeID and not self.using:
+                if self.ci.checkTokenHolder() == self.nodeID and not self.using:
                     self.ci.changeTokenHolder(self.nextNodeID)
                 else:
                     self.pending_requests = True
-                    if self.ci.changeTokenHolder == self.nodeID and not self.asked:
+                    if self.ci.checkTokenHolder() == self.nodeID and not self.asked:
                         self.ci.sendTo([str(self.previousNodeID)], constants.REQ_MSG)
                         self.asked = True
     
@@ -73,6 +81,7 @@ class RingNode:
             self.hungry = True
 
             #Check end condition
+            message = None
             
 
 

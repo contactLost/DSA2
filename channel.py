@@ -3,15 +3,14 @@ import redis
 import random, math
 import pickle
 import os
+import constants
 
 class Channel():
 
-	def __init__(self, nBits=5, hostIP='localhost', portNo=6379):
+	def __init__(self, hostIP='localhost', portNo=6379):
 		self.channel   = redis.StrictRedis(host=hostIP, port=portNo, db=0)
 		self.osmembers = {}
-		self.nBits     = nBits
-		self.MAXPROC   = pow(2, nBits)
-
+		self.MAXPROC   = constants.NP
 	def join(self, subgroup):
 		
 		# Atomic ID generation. 
@@ -102,31 +101,3 @@ class Channel():
 			return [ (msg[0]).decode("ascii"), (msg[1].decode("ascii"))]
 
 
-
-	# def recvFrom(self, senderSet: list, timeout=0):
-	# 	caller = self.osmembers[os.getpid()]
-
-	# 	assert self.channel.sismember('members', str(caller)), ''
-	# 	for i in senderSet: 
-	# 		assert self.channel.sismember('members', str(i)), f'Member did not found {i}'
-	# 	xchan = [str([str(i),str(caller)]) for i in senderSet] # possibly pickle loads for [srt...] or str for xchan
-	# 	msg = self.channel.blpop(list(xchan), timeout)
-	# 	if msg:
-	# 		return [ (msg[0]), (msg[1])]
-
-	# #Modified. But did not try yet.
-	# def sendToAll(self, message):
-	# 	caller = self.osmembers[os.getpid()]
-	# 	assert self.channel.sismember('members', str(caller)), ''
-	# 	for i in self.channel.smembers('members'): 
-
-	# 		#if the pid is in bytes format, change it into integer.
-	# 		try:
-	# 			i = i.decode("ascii")
-	# 		except (UnicodeDecodeError, AttributeError):
-	# 			pass
-	# 		self.channel.rpush(str([str(caller),str(i)]), str(message) )
-
-				
-				
-				

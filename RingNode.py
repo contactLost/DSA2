@@ -2,14 +2,19 @@ import channel
 
 class RingNode:
 
-    nodeID : str
-    previousNodePID: str
-    nextNodePID: str
-    token: bool
 
     def __init__(self):
-        self.ci=channel.Channel( )
+        self.ci=channel.Channel()
         successfulInit = False
+        self.nodeID = ""
+        self.previousNodeID = ""
+        self.nextNodeID = ""
+        self.hungry = False
+        self.pending_requests = False
+        self.asked = False
+        self.using = False
+        self.holder = False
+
         while not successfulInit:
             try:
                 self.nodeID=self.ci.join("ring1")
@@ -70,16 +75,16 @@ class RingNode:
 
         #Find next node. If this is the last node. Go to circle's head
         if thisNodeIndex+1 >= len(topologyByteList):
-            nextNodePID =  topologyByteList[0] 
+            self.nextNodeID =  topologyByteList[0] 
         else:
-            nextNodePID =  topologyByteList[thisNodeIndex +1] 
+            self.nextNodeID =  topologyByteList[thisNodeIndex +1] 
 
         #Find prev node. If this is the first node. Go to circle's last member
         if thisNodeIndex-1 < 0:
-            previousNodePID =  topologyByteList[len(topologyByteList)-1]
+            self.previousNodeID =  topologyByteList[len(topologyByteList)-1]
         else:
-            previousNodePID =  topologyByteList[thisNodeIndex -1] 
+            self.previousNodeID =  topologyByteList[thisNodeIndex -1] 
 
-        #print("CLIENT " + self.nodeID, nextNodePID, previousNodePID, head)
-        return(head,nextNodePID,previousNodePID)
+        print("CLIENT " + self.nodeID, self.nextNodeID, self.previousNodeID, head)
+        return(head,self.nextNodeID,self.previousNodeID)
 

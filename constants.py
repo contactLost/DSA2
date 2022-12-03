@@ -1,0 +1,6 @@
+NP = 0
+DATAFILE = ""
+DELTA = 0
+TOTCOUNT = 0
+LOGFILE = ""
+MAXTIME = 0

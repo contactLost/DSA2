@@ -21,6 +21,7 @@ class RingNode:
         self.using = False
         self.countHunger = True
         self.maxTime = random.randint(0, constants.MAXTIME)
+        print(self.maxTime)
 
         while not successfulInit:
             try:
@@ -43,7 +44,6 @@ class RingNode:
         timer = startingTime
 
         while timer - startingTime < self.maxTime:
-            print(timer - startingTime)
             timer = timer + 1
         self.hungry = True
         self.countHunger = True

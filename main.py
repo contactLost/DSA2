@@ -22,7 +22,7 @@ constants.MAXTIME = int(MAXTIME)
 chan = channel.Channel()
 chan.channel.flushall()
 
-nodes = [RingNode.RingNode() for i in range(int(NP))]
+nodes = [RingNode.RingNode(constants.TOTCOUNT) for i in range(int(NP))]
 [nodes[i].getTopology() for i in range(int(NP))]
 chan.changeTokenHolder(nodes[0].nodeID)
 

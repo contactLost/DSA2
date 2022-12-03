@@ -1,10 +1,11 @@
 import channel
 import constants
+import os
 
 class RingNode:
 
 
-    def __init__(self):
+    def __init__(self, TOTCOUNT):
         self.ci=channel.Channel()
         successfulInit = False
         self.nodeID = ""
@@ -14,6 +15,7 @@ class RingNode:
         self.pending_requests = False
         self.asked = False
         self.using = False
+        self.TOTCOUNT = TOTCOUNT
 
         while not successfulInit:
             try:
@@ -82,8 +84,21 @@ class RingNode:
 
             #Check end condition
             message = None
-            
+            readed_total_update = self.readTotalUpdate()
+            if readed_total_update >= self.TOTCOUNT:
+                print("CLIENT " + self.nodeID + " EXIT.")
+                os._exit(0)
 
+    def readTotalUpdate(self):
+        #open file
+        f = open("./datafile.txt" )
+        #read file
+        firstLine = f.readline().strip("\n")
+        print(firstLine)
+        secondLine = f.readline()
+        print(secondLine)
+        f.close()
+        return int(secondLine)
 
 
     def writeToFile(self,fileName: str = "",delta: str = 100):

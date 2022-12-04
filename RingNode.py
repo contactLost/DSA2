@@ -60,7 +60,7 @@ class RingNode:
 
             #When a request received
             if self.pending_requests or message != None:
-                print("Node " + self.nodeID + ": (asked: " + str(self.asked) + ", pendingRequest: " + str(self.pending_requests) + ", maxTime: " + str(self.maxTime) + ") was requested")
+                #print("Node " + self.nodeID + ": (asked: " + str(self.asked) + ", pendingRequest: " + str(self.pending_requests) + ", maxTime: " + str(self.maxTime) + ") was requested")
                 if self.ci.checkTokenHolder() == self.nodeID and not self.using and not self.hungry:
                     print("Node " + self.nodeID + ": " + " sends token to " + self.nextNodeID + " because it does not use it")
                     self.ci.changeTokenHolder(self.nextNodeID)

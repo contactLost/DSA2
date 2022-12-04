@@ -116,13 +116,13 @@ class RingNode:
 
 
     def checkEndCondition(self):
-        while True:
+        while not self.finished:
             lock.acquire()
             #Check end condition
             try:
                 readed_total_update = self.readTotalUpdate()
                 if readed_total_update >= constants.TOTCOUNT:
-                    print("CLIENT " + self.nodeID + " EXIT.")
+                    print("CLIENT " + self.nodeID + " EXIT.    " + str(readed_total_update))
                     self.finished = True
             except:
                 None

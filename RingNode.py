@@ -65,6 +65,8 @@ class RingNode:
                 if self.hungry:
                     self.using = True
                     self.hungry = False
+
+
                     self.writeToFile()
 
                     #Release resource
@@ -95,6 +97,10 @@ class RingNode:
 
             #Check end condition
             message = None
+            readed_total_update = self.readTotalUpdate()
+            if readed_total_update >= constants.TOTCOUNT:
+                print("CLIENT " + self.nodeID + " EXIT.")
+                os._exit(0)
             
 
 
@@ -156,3 +162,12 @@ class RingNode:
         f = open(constants.LOGFILE,"at")
         f.write(logText)
         f.close()
+
+    def readTotalUpdate(self):
+        #open file
+        f = open(constants.DATAFILE)
+        #read file
+        firstLine = f.readline().strip("\n")
+        secondLine = f.readline()
+        f.close()
+        return int(secondLine)

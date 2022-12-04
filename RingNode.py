@@ -194,7 +194,7 @@ class RingNode:
         t = datetime.utcnow()
         pid = self.nodeID
         ospid = os.getpid()
-        logText = "t= " + str((t - self.starttime).total_seconds() * 1000)[:-3] + "ms, pid= "+ pid +", ospid= "+ str(ospid)  +", "+ str(constants.TOTCOUNT) +", count="+ updatedValue + "\n"
+        logText = "t= " + str((t - self.starttime).total_seconds() * 1000)[:7] + "ms, pid= "+ pid +", ospid= "+ str(ospid)  +", "+ str(constants.TOTCOUNT) +", count="+ updatedValue + "\n"
         #print("trying to open log")
         f = open(constants.LOGFILE,"at")
         f.write(logText)

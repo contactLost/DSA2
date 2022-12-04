@@ -52,6 +52,13 @@ class RingNode:
     def run(self):
         self.ci.bind(self.nodeID)
         while True:
+
+            #Check end condition
+            readed_total_update = self.readTotalUpdate()
+            if readed_total_update >= constants.TOTCOUNT:
+                print("CLIENT " + self.nodeID + " EXIT.")
+                os._exit(0)
+
             #To use resource
             if self.hungry:
                 if not (self.ci.checkTokenHolder() == self.nodeID):
@@ -95,12 +102,8 @@ class RingNode:
                 x = threading.Thread(target=self.countHungry)
                 x.start()
 
-            #Check end condition
+
             message = None
-            readed_total_update = self.readTotalUpdate()
-            if readed_total_update >= constants.TOTCOUNT:
-                print("CLIENT " + self.nodeID + " EXIT.")
-                os._exit(0)
             
 
 

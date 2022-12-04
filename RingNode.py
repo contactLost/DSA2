@@ -7,6 +7,8 @@ import threading
 
 
 from datetime import datetime
+
+lock = threading.Lock()
 class RingNode:
 
 
@@ -22,6 +24,7 @@ class RingNode:
         self.asked = False
         self.using = False
         self.countHunger = True
+        self.finished = False
         self.maxTime = random.randint(0, constants.MAXTIME)
 
         while not successfulInit:
@@ -39,33 +42,68 @@ class RingNode:
             if readed_total_update >= constants.TOTCOUNT:
                 print("CLIENT " + self.nodeID + " EXIT.")
                 self.ci.changeTokenHolder(self.nextNodeID)
-                os._exit(0)
-
+                self.finished = True
+            
             self.using = False
             if self.pending_requests:
                 self.ci.changeTokenHolder(self.nextNodeID)
                 self.pending_requests = False
 
     def countHungry(self):
-        self.countHunger = False
-        startingTime = round(time.time()*1000)
-        timer = startingTime
+        #Hungry counter
+        print("countHungry")
+        while not self.finished:
+            lock.acquire()
+            if self.countHunger:
+                self.countHunger = False
+                startingTime = round(time.time()*1000)
+                timer = startingTime
 
-        while timer - startingTime < self.maxTime:
-            timer = timer + 1
-        self.hungry = True
-        self.countHunger = True
+                while timer - startingTime < self.maxTime:
+                    timer = timer + 1
+                self.hungry = True
+                self.countHunger = True
+            lock.release()
 
-    def run(self):
-        self.ci.bind(self.nodeID)
-        while True:
+    def listenRequests(self):
+        print("listenRequests entered")
+        while not self.finished:
+            lock.acquire()
+            #Listen to requests
+            message = None
+            
+            message = self.ci.recvFromAny(3)
+
+            #When a request received
+            if self.pending_requests or message != None:
+                if self.ci.checkTokenHolder() == self.nodeID and not self.using:
+                    self.ci.changeTokenHolder(self.nextNodeID)
+                else:
+                    self.pending_requests = True
+                    if (not (self.ci.checkTokenHolder() == self.nodeID)) and (not (self.asked)):
+                        print("Node " + self.nodeID + ": " + "Request sent to " + self.previousNodeID)
+                        self.ci.sendTo([str(self.previousNodeID)], constants.REQ_MSG)
+                        self.asked = True
+            lock.release()
+
+    def wantResource(self):
+        print("wantResource entered")
+        while not self.finished:
+            lock.acquire()
             #To use resource
             if self.hungry:
                 if not (self.ci.checkTokenHolder() == self.nodeID):
                     if not self.asked:
                         self.ci.sendTo([str(self.previousNodeID)], constants.REQ_MSG)
                         self.asked = True
+                else:
+                    self.using = True
+            lock.release()
 
+    def tokenReceived(self):
+        print("tokenReceived entered")
+        while not self.finished:
+            lock.acquire()
             #When a token recieved
             if self.ci.checkTokenHolder() == self.nodeID:
                 self.asked = False
@@ -80,30 +118,29 @@ class RingNode:
                 else:
                     self.ci.changeTokenHolder(self.nextNodeID)
                     self.pending_requests = False
+            lock.release()
 
-            #Listen to requests
-            message = self.ci.recvFromAny(3)
-
-            #When a request received
-            if self.pending_requests or message != None:
-                if self.ci.checkTokenHolder() == self.nodeID and not self.hungry:
-                    self.ci.changeTokenHolder(self.nextNodeID)
-                else:
-                    self.pending_requests = True
-                    if (not (self.ci.checkTokenHolder() == self.nodeID)) and (not (self.asked)):
-                        print("Node " + self.nodeID + ": " + "Request sent to " + self.previousNodeID)
-                        self.ci.sendTo([str(self.previousNodeID)], constants.REQ_MSG)
-                        self.asked = True
     
-            #Hungry counter
-            if self.countHunger:
-                x = threading.Thread(target=self.countHungry)
-                x.start()
 
+    def run(self):
+        self.ci.bind(self.nodeID)
+        t1 = threading.Thread(target=self.wantResource)
+        t1.start()
 
-            message = None
-            
+        t2 = threading.Thread(target=self.tokenReceived)
+        t2.start()
 
+        t3 = threading.Thread(target=self.listenRequests)
+        t3.start()
+
+        t4 = threading.Thread(target=self.countHungry)
+        t4.start()
+
+        t1.join()
+        t2.join()
+        t3.join()
+        t4.join()
+        
 
 
     def writeToFile(self):

@@ -36,6 +36,7 @@ f.close()
 nodes = [RingNode.RingNode(starttime) for i in range(int(NP))]
 [nodes[i].getTopology() for i in range(int(NP))]
 chan.changeTokenHolder(nodes[0].nodeID)
+chan.startProgram()
 
 for i in range(int(NP)):
     pid = os.fork()

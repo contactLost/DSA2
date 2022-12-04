@@ -9,6 +9,7 @@ import threading
 from datetime import datetime
 
 lock = threading.Lock()
+lock2 = threading.Lock()
 class RingNode:
 
 
@@ -65,8 +66,12 @@ class RingNode:
                 self.countHunger = True
             lock.release()
 
+        lock.acquire()
+        if self.ci.checkTokenHolder() == self.nodeID:
+            self.ci.changeTokenHolder(self.nextNodeID)
+        lock.release()
+
     def listenRequests(self):
-        print("listenRequests entered")
         while not self.finished:
             lock.acquire()
             #Listen to requests
@@ -86,6 +91,11 @@ class RingNode:
                         self.asked = True
             lock.release()
 
+        lock.acquire()
+        if self.ci.checkTokenHolder() == self.nodeID:
+            self.ci.changeTokenHolder(self.nextNodeID)
+        lock.release()
+
     def wantResource(self):
         print("wantResource entered")
         while not self.finished:
@@ -99,6 +109,13 @@ class RingNode:
                 else:
                     self.using = True
             lock.release()
+
+        lock.acquire()
+        if self.ci.checkTokenHolder() == self.nodeID:
+            self.ci.changeTokenHolder(self.nextNodeID)
+        lock.release()
+
+            
 
     def tokenReceived(self):
         print("tokenReceived entered")
@@ -119,6 +136,12 @@ class RingNode:
                     self.ci.changeTokenHolder(self.nextNodeID)
                     self.pending_requests = False
             lock.release()
+
+        lock.acquire()
+        if self.ci.checkTokenHolder() == self.nodeID:
+            self.ci.changeTokenHolder(self.nextNodeID)
+        lock.release()
+
 
     
 

@@ -9,10 +9,7 @@ import threading
 from datetime import datetime
 
 lock = threading.Lock()
-lock2 = threading.Lock()
 class RingNode:
-
-
     def __init__(self, starttime):
         self.starttime: datetime = starttime
         self.ci=channel.Channel()
@@ -39,7 +36,6 @@ class RingNode:
             #Check end condition
             readed_total_update = self.readTotalUpdate()
             if readed_total_update >= constants.TOTCOUNT:
-                print("CLIENT " + self.nodeID + " EXIT.    " + str(readed_total_update))
                 self.ci.finishProgram()
 
             self.using = False
@@ -49,21 +45,18 @@ class RingNode:
 
     def countHungry(self):
         #Hungry counter
-        while not self.ci.checkFinished():
+        while self.ci.checkFinished() == "False":
             print("Node " + self.nodeID + ": countHungry")
             lock.acquire()
             if not self.hungry:
-                startingTime = round(time.time()*1000)
-                timer = startingTime
+                time.sleep(self.maxTime/1000)
 
-                while timer - startingTime < self.maxTime:
-                    timer = timer + 1
                 self.hungry = True
                 print("Node " + self.nodeID + ": is now hungry")
             lock.release()
 
     def listenRequests(self):
-        while not self.ci.checkFinished():
+        while self.ci.checkFinished() == "False":
             lock.acquire()
             #Listen to requests
             message = None
@@ -83,7 +76,7 @@ class RingNode:
             lock.release()
 
     def wantResource(self):
-        while not self.ci.checkFinished():
+        while self.ci.checkFinished() == "False":
             print("Node " + self.nodeID + ": wantResource")
             lock.acquire()
             #To use resource
@@ -99,7 +92,7 @@ class RingNode:
             
 
     def tokenReceived(self):
-        while not self.ci.checkFinished():
+        while self.ci.checkFinished() == "False":
             print("Node " + self.nodeID + ": tokenReceived")
             lock.acquire()
             #When a token recieved
@@ -118,21 +111,6 @@ class RingNode:
                     self.pending_requests = False
             lock.release()
 
-
-    def checkEndCondition(self):
-        while not self.ci.checkFinished():
-            lock.acquire()
-            #Check end condition
-            try:
-                readed_total_update = self.readTotalUpdate()
-                if readed_total_update >= constants.TOTCOUNT:
-                    print("CLIENT " + self.nodeID + " EXIT.    " + str(readed_total_update))
-                    self.finished = True
-            except:
-                None
-            lock.release()
-    
-
     def run(self):
         self.ci.bind(self.nodeID)
         t1 = threading.Thread(target=self.wantResource)
@@ -149,9 +127,14 @@ class RingNode:
 
 
         t1.join()
+        print("Node " + self.nodeID + ": Thread 1 exited")
         t2.join()
+        print("Node " + self.nodeID + ": Thread 2 exited")
         t3.join()
+        print("Node " + self.nodeID + ": Thread 3 exited")
         t4.join()
+        print("Node " + self.nodeID + ": Thread 4 exited")
+        print("Node " + self.nodeID + ": EXITED")
         
 
 
@@ -207,7 +190,7 @@ class RingNode:
         t = datetime.utcnow()
         pid = self.nodeID
         ospid = os.getpid()
-        logText = "t= " + str((t - self.starttime).total_seconds() * 1000)[:6] + "ms, pid= "+ pid +", ospid= "+ str(ospid)  +", "+ str(constants.TOTCOUNT) +", count="+ updatedValue + "\n"
+        logText = "t= " + str((t - self.starttime).total_seconds() * 1000)[:-3] + "ms, pid= "+ pid +", ospid= "+ str(ospid)  +", "+ str(constants.TOTCOUNT) +", count="+ updatedValue + "\n"
         #print("trying to open log")
         f = open(constants.LOGFILE,"at")
         f.write(logText)

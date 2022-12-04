@@ -125,6 +125,6 @@ class Channel():
 		while True:
 			try:
 				finished = (self.channel.lrange(constants.FINISHED_KEY, 0, 0)[0]).decode("ascii")
-				return finished
+				return str(finished)
 			except:
 				None

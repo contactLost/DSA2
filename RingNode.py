@@ -24,6 +24,7 @@ class RingNode:
         self.pending_requests = False
         self.asked = False
         self.using = False
+        self.finished = False
         self.maxTime = random.randint(0, constants.MAXTIME)
 
         while not successfulInit:
@@ -35,13 +36,7 @@ class RingNode:
         
     def releaseResource(self):
         #Release resource
-        if self.ci.checkTokenHolder() == self.nodeID:
-            #Check end condition
-            readed_total_update = self.readTotalUpdate()
-            if readed_total_update >= constants.TOTCOUNT:
-                print("CLIENT " + self.nodeID + " EXIT.")
-                constants.FINISHED = True
-            
+        if self.ci.checkTokenHolder() == self.nodeID:            
             self.using = False
             if self.pending_requests:
                 self.ci.changeTokenHolder(self.nextNodeID)
@@ -49,7 +44,7 @@ class RingNode:
 
     def countHungry(self):
         #Hungry counter
-        while not constants.FINISHED:
+        while not self.finished:
             print("Node " + self.nodeID + ": countHungry")
             lock.acquire()
             if not self.hungry:
@@ -63,8 +58,8 @@ class RingNode:
             lock.release()
 
     def listenRequests(self):
-        while not constants.FINISHED:
-            print("Node " + self.nodeID + ": listenRequests " + str(constants.FINISHED))
+        while not self.finished:
+            print("Node " + self.nodeID + ": listenRequests " + str(self.finished))
             lock.acquire()
             #Listen to requests
             message = None
@@ -73,7 +68,7 @@ class RingNode:
 
             #When a request received
             if self.pending_requests or message != None:
-                if self.ci.checkTokenHolder() == self.nodeID and not self.using:
+                if self.ci.checkTokenHolder() == self.nodeID and not self.using and not self.hungry:
                     self.ci.changeTokenHolder(self.nextNodeID)
                 else:
                     self.pending_requests = True
@@ -84,7 +79,7 @@ class RingNode:
             lock.release()
 
     def wantResource(self):
-        while not constants.FINISHED:
+        while not self.finished:
             print("Node " + self.nodeID + ": wantResource")
             lock.acquire()
             #To use resource
@@ -100,7 +95,7 @@ class RingNode:
             
 
     def tokenReceived(self):
-        while not constants.FINISHED:
+        while not self.finished:
             print("Node " + self.nodeID + ": tokenReceived")
             lock.acquire()
             #When a token recieved
@@ -119,6 +114,19 @@ class RingNode:
                     self.pending_requests = False
             lock.release()
 
+
+    def checkEndCondition(self):
+        while True:
+            lock.acquire()
+            #Check end condition
+            try:
+                readed_total_update = self.readTotalUpdate()
+                if readed_total_update >= constants.TOTCOUNT:
+                    print("CLIENT " + self.nodeID + " EXIT.")
+                    self.finished = True
+            except:
+                None
+            lock.release()
     
 
     def run(self):
@@ -135,10 +143,14 @@ class RingNode:
         t4 = threading.Thread(target=self.countHungry)
         t4.start()
 
+        t5 = threading.Thread(target=self.checkEndCondition)
+        t5.start()
+
         t1.join()
         t2.join()
         t3.join()
         t4.join()
+        t5.join()
         
 
 

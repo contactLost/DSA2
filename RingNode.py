@@ -51,6 +51,7 @@ class RingNode:
     def countHungry(self):
         #Hungry counter
         while not self.finished:
+            print("Node " + self.nodeID + ": countHungry")
             lock.acquire()
             if not self.hungry:
                 startingTime = round(time.time()*1000)
@@ -69,6 +70,7 @@ class RingNode:
 
     def listenRequests(self):
         while not self.finished:
+            print("Node " + self.nodeID + ": listenRequests " + str(self.finished))
             lock.acquire()
             #Listen to requests
             message = None
@@ -94,6 +96,7 @@ class RingNode:
 
     def wantResource(self):
         while not self.finished:
+            print("Node " + self.nodeID + ": wantResource")
             lock.acquire()
             #To use resource
             if self.hungry:
@@ -114,6 +117,7 @@ class RingNode:
 
     def tokenReceived(self):
         while not self.finished:
+            print("Node " + self.nodeID + ": tokenReceived")
             lock.acquire()
             #When a token recieved
             if self.ci.checkTokenHolder() == self.nodeID:

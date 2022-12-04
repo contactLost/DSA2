@@ -22,6 +22,7 @@ class RingNode:
         self.asked = False
         self.using = False
         self.maxTime = random.randint(0, constants.MAXTIME)
+        print("Node " + self.nodeID + ": " + str(self.maxTime))
 
         while not successfulInit:
             try:
@@ -41,19 +42,17 @@ class RingNode:
             self.using = False
             if self.pending_requests:
                 self.ci.changeTokenHolder(self.nextNodeID)
+                print("Node " + self.nodeID + ": " + " sends token to " + self.nextNodeID + " because node worked and released resources")
                 self.pending_requests = False
 
     def countHungry(self):
         #Hungry counter
         while self.ci.checkFinished() == "False":
-            print("Node " + self.nodeID + ": countHungry")
-            lock.acquire()
             if not self.hungry:
                 time.sleep(self.maxTime/1000)
 
                 self.hungry = True
                 print("Node " + self.nodeID + ": is now hungry")
-            lock.release()
 
     def listenRequests(self):
         while self.ci.checkFinished() == "False":
@@ -65,35 +64,36 @@ class RingNode:
 
             #When a request received
             if self.pending_requests or message != None:
+                print("Node " + self.nodeID + ": (asked: " + str(self.asked) + ", pendingRequest: " + str(self.pending_requests) + ", maxTime: " + str(self.maxTime) + ") was requested")
                 if self.ci.checkTokenHolder() == self.nodeID and not self.using and not self.hungry:
+                    print("Node " + self.nodeID + ": " + " sends token to " + self.nextNodeID + " because it does not use it")
                     self.ci.changeTokenHolder(self.nextNodeID)
+                    self.asked = False
+                    self.pending_requests = False
                 else:
                     self.pending_requests = True
                     if (not (self.ci.checkTokenHolder() == self.nodeID)) and (not (self.asked)):
-                        print("Node " + self.nodeID + ": " + "Request sent to " + self.previousNodeID)
+                        print("Node " + self.nodeID + ": " + " sends incoming request from " + self.nextNodeID + " to " + self.previousNodeID)
                         self.ci.sendTo([str(self.previousNodeID)], constants.REQ_MSG)
                         self.asked = True
             lock.release()
 
     def wantResource(self):
         while self.ci.checkFinished() == "False":
-            print("Node " + self.nodeID + ": wantResource")
             lock.acquire()
             #To use resource
             if self.hungry:
                 if not (self.ci.checkTokenHolder() == self.nodeID):
                     if not self.asked:
+                        print("Node " + self.nodeID + ": " + " is requesting the token from " + self.previousNodeID)
                         self.ci.sendTo([str(self.previousNodeID)], constants.REQ_MSG)
                         self.asked = True
-                else:
-                    self.using = True
             lock.release()
 
             
 
     def tokenReceived(self):
         while self.ci.checkFinished() == "False":
-            print("Node " + self.nodeID + ": tokenReceived")
             lock.acquire()
             #When a token recieved
             if self.ci.checkTokenHolder() == self.nodeID:
@@ -107,8 +107,10 @@ class RingNode:
                     self.releaseResource()
 
                 else:
-                    self.ci.changeTokenHolder(self.nextNodeID)
-                    self.pending_requests = False
+                    if self.pending_requests:
+                        self.ci.changeTokenHolder(self.nextNodeID)
+                        print("Node " + self.nodeID + ": " + " sends token to " + self.nextNodeID + " because received token is not needed")
+                        self.pending_requests = False
             lock.release()
 
     def run(self):
@@ -182,7 +184,7 @@ class RingNode:
         else:
             self.previousNodeID =  topologyByteList[thisNodeIndex -1] 
 
-        print("CLIENT " + self.nodeID, self.nextNodeID, self.previousNodeID, head)
+        print("CLIENT " + self.nodeID + " Next " +self.nextNodeID + " Previous " + self.previousNodeID + " Head " + head)
         return(head,self.nextNodeID,self.previousNodeID)
 
     def writeToLog(self, updatedValue):

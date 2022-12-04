@@ -34,6 +34,13 @@ class RingNode:
     def releaseResource(self):
         #Release resource
         if self.ci.checkTokenHolder() == self.nodeID:
+            #Check end condition
+            readed_total_update = self.readTotalUpdate()
+            if readed_total_update >= constants.TOTCOUNT:
+                print("CLIENT " + self.nodeID + " EXIT.")
+                self.ci.changeTokenHolder(self.nextNodeID)
+                os._exit(0)
+
             self.using = False
             if self.pending_requests:
                 self.ci.changeTokenHolder(self.nextNodeID)
@@ -52,13 +59,6 @@ class RingNode:
     def run(self):
         self.ci.bind(self.nodeID)
         while True:
-
-            #Check end condition
-            readed_total_update = self.readTotalUpdate()
-            if readed_total_update >= constants.TOTCOUNT:
-                print("CLIENT " + self.nodeID + " EXIT.")
-                os._exit(0)
-
             #To use resource
             if self.hungry:
                 if not (self.ci.checkTokenHolder() == self.nodeID):
@@ -72,8 +72,6 @@ class RingNode:
                 if self.hungry:
                     self.using = True
                     self.hungry = False
-
-
                     self.writeToFile()
 
                     #Release resource

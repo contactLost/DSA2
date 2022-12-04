@@ -22,7 +22,6 @@ class RingNode:
         self.asked = False
         self.using = False
         self.maxTime = random.randint(0, constants.MAXTIME)
-        print("Node " + self.nodeID + ": " + str(self.maxTime))
 
         while not successfulInit:
             try:

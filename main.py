@@ -1,3 +1,4 @@
+from datetime import datetime
 from multiprocessing.connection import wait
 import channel as channel
 import os
@@ -19,14 +20,25 @@ constants.TOTCOUNT = int(TOTCOUNT)
 constants.LOGFILE = LOGFILE
 constants.MAXTIME = int(MAXTIME)
 
+starttime = datetime.utcnow()
+
 chan = channel.Channel()
 chan.channel.flushall()
 
-nodes = [RingNode.RingNode() for i in range(int(NP))]
+f = open(DATAFILE ,"wt")
+f.write("0\n0")
+f.close()
+
+f = open(LOGFILE ,"wt")
+f.write("")
+f.close()
+
+nodes = [RingNode.RingNode(starttime) for i in range(int(NP))]
 [nodes[i].getTopology() for i in range(int(NP))]
 chan.changeTokenHolder(nodes[0].nodeID)
+chan.startProgram()
 
-for i in range(10):
+for i in range(int(NP)):
     pid = os.fork()
     if pid == 0:
         nodes[i].run()

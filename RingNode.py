@@ -1,10 +1,17 @@
+import os
 import channel
 import constants
+import random
+import time
+import threading
 
+
+from datetime import datetime
+
+lock = threading.Lock()
 class RingNode:
-
-
-    def __init__(self):
+    def __init__(self, starttime):
+        self.starttime: datetime = starttime
         self.ci=channel.Channel()
         successfulInit = False
         self.nodeID = ""
@@ -14,99 +21,145 @@ class RingNode:
         self.pending_requests = False
         self.asked = False
         self.using = False
+        self.maxTime = random.randint(0, constants.MAXTIME)
 
         while not successfulInit:
             try:
                 self.nodeID=self.ci.join("ring1")
                 successfulInit = True
             except(AssertionError):
-                print("Could not get ID retrying")
+                None
         
+    def releaseResource(self):
+        #Release resource
+        if self.ci.checkTokenHolder() == self.nodeID:
 
-    def run(self):
-        while True:
+            self.using = False
+            if self.pending_requests:
+                self.ci.changeTokenHolder(self.nextNodeID)
+                print("Node " + self.nodeID + ": " + " sends token to " + self.nextNodeID + " because node worked and released resources")
+                self.pending_requests = False
+
+    def countHungry(self):
+        #Hungry counter
+        while self.ci.checkFinished() == "False":
+            if not self.hungry:
+                time.sleep(self.maxTime/1000)
+
+                self.hungry = True
+                print("Node " + self.nodeID + ": is now hungry")
+
+    def listenRequests(self):
+        while self.ci.checkFinished() == "False":
+            lock.acquire()
             #Listen to requests
-            message = self.ci.recvFromAny()
+            message = None
+            
+            message = self.ci.recvFromAny(3)
 
-            #When a token reveived
+            #When a request received
+            if self.pending_requests or message != None:
+                #print("Node " + self.nodeID + ": (asked: " + str(self.asked) + ", pendingRequest: " + str(self.pending_requests) + ", maxTime: " + str(self.maxTime) + ") was requested")
+                if self.ci.checkTokenHolder() == self.nodeID and not self.using and not self.hungry:
+                    print("Node " + self.nodeID + ": " + " sends token to " + self.nextNodeID + " because it does not use it")
+                    self.ci.changeTokenHolder(self.nextNodeID)
+                    self.asked = False
+                    self.pending_requests = False
+                else:
+                    self.pending_requests = True
+                    if (not (self.ci.checkTokenHolder() == self.nodeID)) and (not (self.asked)):
+                        print("Node " + self.nodeID + ": " + " sends incoming request from " + self.nextNodeID + " to " + self.previousNodeID)
+                        self.ci.sendTo([str(self.previousNodeID)], constants.REQ_MSG)
+                        self.asked = True
+            lock.release()
+
+    def wantResource(self):
+        while self.ci.checkFinished() == "False":
+            lock.acquire()
+            #To use resource
+            if self.hungry:
+                if not (self.ci.checkTokenHolder() == self.nodeID):
+                    if not self.asked:
+                        print("Node " + self.nodeID + ": " + " is requesting the token from " + self.previousNodeID)
+                        self.ci.sendTo([str(self.previousNodeID)], constants.REQ_MSG)
+                        self.asked = True
+            lock.release()
+
+            
+
+    def tokenReceived(self):
+        while self.ci.checkFinished() == "False":
+            lock.acquire()
+            #When a token recieved
             if self.ci.checkTokenHolder() == self.nodeID:
                 self.asked = False
                 if self.hungry:
                     self.using = True
                     self.hungry = False
-                    #Async use file
+
+                    #Check end condition
+                    readed_total_update = self.readTotalUpdate()
+                    if readed_total_update >= constants.TOTCOUNT:
+                        self.ci.finishProgram()
+                    else:
+                        self.writeToFile()
+
+                    #Release resource
+                    self.releaseResource()
+
                 else:
-                    self.ci.changeTokenHolder(self.nextNodeID)
-                    self.pending_requests = False
+                    if self.pending_requests:
+                        self.ci.changeTokenHolder(self.nextNodeID)
+                        print("Node " + self.nodeID + ": " + " sends token to " + self.nextNodeID + " because received token is not needed")
+                        self.pending_requests = False
+            lock.release()
 
-            #To use resource
-            if self.hungry:
-                if self.ci.checkTokenHolder() != self.nodeID:
-                    if not self.asked:
-                        self.ci.sendTo([str(self.previousNodeID)], constants.REQ_MSG)
-                        self.asked = True
-                    # wait until (using == TRUE) migth be unnecessary for us
-                else:
-                    self.using = True
+    def run(self):
+        self.ci.bind(self.nodeID)
+        t1 = threading.Thread(target=self.wantResource)
+        t1.start()
 
-            #Release resource
-            self.using = True
-            if self.pending_requests:
-                self.ci.changeTokenHolder(self.nextNodeID)
-                self.pending_requests = False
+        t2 = threading.Thread(target=self.tokenReceived)
+        t2.start()
 
-            #When a request received
-            if message == constants.REQ_MSG:
-                #Delete all requests received
-                if self.ci.changeTokenHolder == self.nodeID and not self.using:
-                    self.ci.changeTokenHolder(self.nextNodeID)
-                else:
-                    self.pending_requests = True
-                    if self.ci.changeTokenHolder == self.nodeID and not self.asked:
-                        self.ci.sendTo([str(self.previousNodeID)], constants.REQ_MSG)
-                        self.asked = True
-    
-            #Hungry counter
+        t3 = threading.Thread(target=self.listenRequests)
+        t3.start()
 
-            #Check end condition
-
-            # try:
-            #     self.ci.bind(self.nodeID)
-
-            #     # print("CLIENT " + self.nodeID + " sending message: "+ ("Hello from " +str(self.nodeID)) + "\n")
-            #     # self.ci.sendTo([str(self.nextNodeID)],("Hello from " +str(self.nodeID)) )
-
-            #     while True:
-            #         message = self.ci.recvFromAny()
-            #         if message == None:
-            #             continue
-            #         print("NODE: " + str(message[0]) + " Received message: " + str(message[1]) +"\n" )
-            # except AssertionError as msg:
-            #     print("ASSERT", self.nodeID, " msg:" , msg)
+        t4 = threading.Thread(target=self.countHungry)
+        t4.start()
 
 
+        t1.join()
+        print("Node " + self.nodeID + ": Thread 1 exited")
+        t2.join()
+        print("Node " + self.nodeID + ": Thread 2 exited")
+        t3.join()
+        print("Node " + self.nodeID + ": Thread 3 exited")
+        t4.join()
+        print("Node " + self.nodeID + ": Thread 4 exited")
+        print("Node " + self.nodeID + ": EXITED")
+        
 
 
-    def writeToFile(self,fileName: str = "",delta: str = 100):
+    def writeToFile(self):
         #open file
-        f = open("./datafile.txt" )
+        f = open(constants.DATAFILE )
         #read file
         firstLine = f.readline().strip("\n")
-        print(firstLine)
+        print("Node " + self.nodeID + ": " + firstLine)
         secondLine = f.readline()
-        print(secondLine)
+        print("Node " + self.nodeID + ": " + secondLine)
         f.close()
         
         #write
-        f = open("./datafile.txt" ,"wt")
-        writeFirstLine = str(int(firstLine) + int(delta))+ "\n"
+        f = open(constants.DATAFILE ,"wt")
+        writeFirstLine = str(int(firstLine) + int(constants.DELTA))+ "\n"
         writeSecondLine = str(int(secondLine) + 1)
         f.write(writeFirstLine)
-        f.write(writeSecondLine)  
-        print(writeFirstLine)
-        print(writeSecondLine)
-        #close file
+        f.write(writeSecondLine)
         f.close()
+        #Update log file
+        self.writeToLog( str(int(secondLine) + 1) )
 
 
     def getTopology(self):
@@ -118,8 +171,6 @@ class RingNode:
             topologyByteList[i] = topologyByteList[i].decode("ascii")
 
         thisNodeIndex = topologyByteList.index(self.nodeID)
-
-        #print(topologyByteList)
         head = topologyByteList[0]
 
         #Find next node. If this is the last node. Go to circle's head
@@ -134,5 +185,25 @@ class RingNode:
         else:
             self.previousNodeID =  topologyByteList[thisNodeIndex -1] 
 
-        print("CLIENT " + self.nodeID, self.nextNodeID, self.previousNodeID, head)
+        print("CLIENT " + self.nodeID + " Next " +self.nextNodeID + " Previous " + self.previousNodeID + " Head " + head)
         return(head,self.nextNodeID,self.previousNodeID)
+
+    def writeToLog(self, updatedValue):
+        #t=0060000ms, pid=1, ospid=34765, new=50100, totalcount, count=17
+        t = datetime.utcnow()
+        pid = self.nodeID
+        ospid = os.getpid()
+        logText = "t= " + str((t - self.starttime).total_seconds() * 1000)[:7] + "ms, pid= "+ pid +", ospid= "+ str(ospid)  +", "+ str(constants.TOTCOUNT) +", count="+ updatedValue + "\n"
+        #print("trying to open log")
+        f = open(constants.LOGFILE,"at")
+        f.write(logText)
+        f.close()
+
+    def readTotalUpdate(self):
+        #open file
+        f = open(constants.DATAFILE)
+        #read file
+        firstLine = f.readline().strip("\n")
+        secondLine = f.readline()
+        f.close()
+        return int(secondLine)

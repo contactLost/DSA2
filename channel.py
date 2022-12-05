@@ -102,9 +102,29 @@ class Channel():
 
 
 	def changeTokenHolder(self, newHolderId):
+		self.channel.blpop(constants.TOKEN_KEY, 1)
 		self.channel.lpush(constants.TOKEN_KEY, str(newHolderId))
 
 
 	def checkTokenHolder(self):
-		holder = self.channel.lrange(constants.TOKEN_KEY, 0, 0)
-		return holder
+		while True:
+			try:
+				holder = (self.channel.lrange(constants.TOKEN_KEY, 0, 0)[0]).decode("ascii")
+				return holder
+			except:
+				None
+
+	def finishProgram(self):
+		self.channel.blpop(constants.FINISHED_KEY, 1)
+		self.channel.lpush(constants.FINISHED_KEY, str(True))
+
+	def startProgram(self):
+		self.channel.lpush(constants.FINISHED_KEY, str(False))
+	
+	def checkFinished(self):
+		while True:
+			try:
+				finished = (self.channel.lrange(constants.FINISHED_KEY, 0, 0)[0]).decode("ascii")
+				return str(finished)
+			except:
+				None
